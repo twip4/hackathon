@@ -1,12 +1,16 @@
 import pygame, sys, socket, struct
 from pygame.locals import *
 
+import time
+
 from random import randint, choice, seed
 from dataclasses import dataclass, field
 from typing import Optional, Callable, Any, List, Dict, Tuple, Set
 
 hote = "localhost"
 port = 5000
+
+position = {}
 
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 socket.connect((hote, port))
@@ -16,10 +20,11 @@ def ERROR(msg: str) -> None:
     print("[ERROR] {}".format(msg))
     exit()
 
-def send(socket, message):
+def send(message):
+    message = message.encode()
     socket.send(struct.pack("i", len(message)) + message)
 
-def recv(socket):
+def recv():
     try:
         size = struct.unpack("i", socket.recv(struct.calcsize("i")))[0]
         data = ""
@@ -32,11 +37,19 @@ def recv(socket):
     except:
         exit()
 
-m = "JOIN|TEST"
-m = m.encode()
 
-send(socket, m)
+def parse_message(msg: str) -> List[str]:
+    return [s.upper() for s in msg.split("|")]
 
-recv(socket)
 
-socket.close()
+
+def recuData():
+    data = recv()
+    if data == "Au tour de l'équipe TEST" :
+        send("STAY")
+
+send("JOIN|EQUIPE BOT")
+
+while True :
+    recuData()
+    time.sleep(0.5)
