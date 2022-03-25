@@ -10,8 +10,8 @@ NBJOUEUR = 2
 NBCASES = 5
 BASE_UNITE_SIZE = 12
 MAX_TURN = 30
-EVENT_PROBA = 5 # Pourcentage
-WAIT_TIME = 1000 # Temps à attendre entre chaque action d'un joueur (pour voir ce qu'il se passe)
+EVENT_PROBA = 100 # Pourcentage
+WAIT_TIME = 1000 # Temps Ã  attendre entre chaque action d'un joueur (pour voir ce qu'il se passe)
 
 # AFFICHAGE
 HEIGHT = 1000
@@ -41,7 +41,7 @@ def recv(socket):
         while len(data) < size:
             msg = socket.recv(size - len(data))
             if not msg:
-                ERROR("Problème lors de la reception du socket {}".format(socket))
+                ERROR("ProblÃ¨me lors de la reception du socket {}".format(socket))
             data += msg.decode()
         return data
     except:
@@ -127,7 +127,7 @@ class Joueur:
         if res:
             return res
 
-        print("[ERROR] Aucune unitée avec l'id {} pour le joueur {}".format(idUnite, self.id))
+        print("[ERROR] Aucune unitÃ©e avec l'id {} pour le joueur {}".format(idUnite, self.id))
         exit()
 
     def get_unite_at(self, pos: Pos) -> Optional[Unite]:
@@ -180,10 +180,10 @@ class Game:
         self.serveur: Serveur = Serveur()
         self.serveur.getJoueurs()
 
-        # Annonce du début de la partie
-        print("[INFO] Tous les joueurs ont rejoins, début de la partie")
+        # Annonce du dÃ©but de la partie
+        print("[INFO] Tous les joueurs ont rejoins, dÃ©but de la partie")
         for i, player in enumerate(self.serveur.players):
-            send(player, build_message("NEWGAME", [NBCASES, NBJOUEUR, i, *self.positionJoueur[i]]))
+            send(player, build_message("NEWGAME", [NBCASES, NBJOUEUR, i, *self.positionJoueur[i], BASE_UNITE_SIZE, EVENT_PROBA]))
 
         #DEFINE: Joueurs
         self.listJoueurs = [Joueur(i, self.serveur.team_name[i], self.positionJoueur[i], self.colorJoueur[i], NBCASES) for i in range(len(self.serveur.players))]
@@ -223,7 +223,7 @@ class Game:
         to_move_count = int(params[1])
 
         if to_move_count > unite.size:
-            ERROR('{} : déplacement de {} sur {} max'.format(player_id, to_move_count, unite.size))
+            ERROR('{} : dÃ©placement de {} sur {} max'.format(player_id, to_move_count, unite.size))
             exit()
 
         direction = params[2]
@@ -235,21 +235,24 @@ class Game:
             ERROR("Case en dehors du plateau")
             exit()
 
-        # S'il y a un événement spécial sur la prochaine case du joueur
-        # On regarde en premier les pre-événements
+        # S'il y a un Ã©vÃ©nement spÃ©cial sur la prochaine case du joueur
+        # On regarde en premier les pre-Ã©vÃ©nements
         if case.function == CASE_FUNCTION.BLOCK:
-            # Si un joueur essaye d'aller sur une case qui est bloquée, c'est une erreur
-            ERROR("Déplacement sur une case bloquée")
+            # Si un joueur essaye d'aller sur une case qui est bloquÃ©e, c'est une erreur
+            ERROR("DÃ©placement sur une case bloquÃ©e")
         
-        # Si on déplace qu'une partie de nos unités
+        if to_move_count == 0:
+            ERROR("Tu ne peux pas dÃ©placer aucune unitÃ©")
+
+        # Si on dÃ©place qu'une partie de nos unitÃ©s
         if to_move_count <= unite.size:
             unite_owner, unite_at_new_pos = self.get_unite_at_position(new_pos)
             if unite_owner and unite_at_new_pos:
                 if unite_owner == joueur:
                     joueur.transfert_unit(unite, unite_at_new_pos, to_move_count)
-                # On se déplace sur une unité adverse
+                # On se dÃ©place sur une unitÃ© adverse
                 else:
-                    # Si l'adversaire à plus d'unité, alors il reste
+                    # Si l'adversaire Ã  plus d'unitÃ©, alors il reste
                     if unite_at_new_pos.size > to_move_count:
                         unite_at_new_pos.size -= to_move_count
                         joueur.kill_unite(unite)
@@ -258,11 +261,11 @@ class Game:
                         unite.size -= unite_at_new_pos.size
                         unite.pos = new_pos
                         unite_owner.kill_unite(unite_at_new_pos)
-                    # Les deux unites on la même taille, les deux meurent
+                    # Les deux unites on la mÃªme taille, les deux meurent
                     else:
                         unite_owner.kill_unite(unite_at_new_pos)
                         joueur.kill_unite(unite)
-            # S'il n'y a pas déjà une unité à cette position
+            # S'il n'y a pas dÃ©jÃ  une unitÃ© Ã  cette position
             else:
                 joueur.move_unit(unite, new_pos, to_move_count)
 
@@ -293,7 +296,7 @@ class Game:
         self.listJoueurs[(joueur.id + 1) % len(self.listJoueurs)].can_play = False
         case.function = CASE_FUNCTION.NONE
 
-    # Renvoie l'unité à la position donnée
+    # Renvoie l'unitÃ© Ã  la position donnÃ©e
     def get_unite_at_position(self, pos: Pos) -> Tuple[Optional[Joueur], Optional[Unite]]:
         for joueur in self.listJoueurs:
             unite = joueur.get_unite_at(pos)
@@ -320,8 +323,8 @@ class Game:
             random_case = choice(casesVides)
             random_function_id = randint(2, 7)
             random_case.function = random_function_id
-            params = [*random_case.pos]
 
+            params = [*random_case.pos]
             if random_function_id == CASE_FUNCTION.TELEPORT:
                 random_case.turn_left = -1
                 pastille = (randint(0, 255), randint(0, 255), randint(0,255))
@@ -344,7 +347,8 @@ class Game:
                 random_temps = randint(1, 5)
                 params.append(str(random_temps))
                 random_case.turn_left = random_temps
-            msg = build_message(str(random_function_id), params)
+            msg = build_message("EVENT", [str(random_function_id), *params])
+            print(msg)
             return msg
         return None
 
@@ -399,12 +403,12 @@ class Interface(Game):
         self.font = pygame.font.Font(None, 76)
         self.font_unite = pygame.font.Font(None, int(SIZE_CASE*0.8))
 
-    # Début de la partie une fois que tous les joueurs ont rejoins
+    # DÃ©but de la partie une fois que tous les joueurs ont rejoins
     def run(self) -> None:
         self.render()
         pygame.time.wait(WAIT_TIME)
 
-        # Chaque tour de boucle représente un tour de jeu
+        # Chaque tour de boucle reprÃ©sente un tour de jeu
         while not self.is_game_over():
             print('[LOG] New turn')
             for event in pygame.event.get():
@@ -435,17 +439,17 @@ class Interface(Game):
 
     def end_game(self):
         self.render()
-        self.display.blit(self.font.render("Terminé !", True, (255, 0, 0)), (WIDTH - self.font.size("Terminé !")[0] - 100, HEIGHT / 2))
+        self.display.blit(self.font.render("TerminÃ© !", True, (255, 0, 0)), (WIDTH - self.font.size("TerminÃ© !")[0] - 100, HEIGHT / 2))
         pygame.display.update()
-        print('[LOG] Partie terminée !!')
+        print('[LOG] Partie terminÃ©e !!')
         still_alive = self.get_players_alive()
 
         if len(still_alive) == 0:
-            print("[LOG] Personne n'a gagné, EGALITE !")
+            print("[LOG] Personne n'a gagnÃ©, EGALITE !")
         elif len(still_alive) > 0:
-            print("Félicitation à l'équipe {} qui est gagnante de cette partie !".format(still_alive[0].nom))
+            print("FÃ©licitation Ã  l'Ã©quipe {} qui est gagnante de cette partie !".format(still_alive[0].nom))
         elif self.nb_tour >= MAX_TURN:
-            print("[LOG] Personne n'a gagné, EGALITE !")
+            print("[LOG] Personne n'a gagnÃ©, EGALITE !")
 
         # On attend que le joueur quitte l'application
         while True:
@@ -518,7 +522,7 @@ class Interface(Game):
                 print("[LOG] Le joueur {} ne peut pas jouer ce tour !".format(player_id))
                 self.listJoueurs[player_id].can_play = True
                 continue
-            print("[LOG] Au tour de l'équipe {}".format(self.listJoueurs[player_id].nom))
+            print("[LOG] Au tour de l'Ã©quipe {}".format(self.listJoueurs[player_id].nom))
             send(player, build_message("NEWTURN", [len(self.last_actions[player_id])]))
             for last_action in self.last_actions[player_id]:
                 print("SENDING LAST ACTION " + last_action.decode())
@@ -534,9 +538,9 @@ class Interface(Game):
             for other_player_id, other_player in enumerate(self.serveur.players):
                 if other_player_id != player_id:
                     if command == "MOVE":
-                        msg = build_message("0", [player_id, *params])
+                        msg = build_message("EVENT", [0, -1, -1, player_id, *params])
                     elif command == "STAY":
-                        msg = build_message("1", [player_id])
+                        msg = build_message("EVENT", [1, -1, -1, player_id])
                     self.last_actions[other_player_id].append(msg)
 
             self.render()
@@ -572,7 +576,7 @@ class Serveur:
         while len(self.players) < NBJOUEUR:
             self.socket.listen(5)
             client, address = self.socket.accept()
-            print("[INFO] {} connecté".format(address))
+            print("[INFO] {} connectÃ©".format(address))
             response = recv(client)
             if not response:
                 send(client, build_message("ERROR", ["Erreur dans la reception du message"]))
@@ -581,11 +585,11 @@ class Serveur:
 
             command, *params = parse_message(response)
             if command != 'JOIN' or len(params) != 1:
-                send(client, build_message("ERROR", ["Vous devez en premier JOIN avec un nom d'équipe"]))
+                send(client, build_message("ERROR", ["Vous devez en premier JOIN avec un nom d'Ã©quipe"]))
                 client.close()
                 continue
 
-            print("[INFO] Nouveau client accepté avec le nom {}".format(params[0]))
+            print("[INFO] Nouveau client acceptÃ© avec le nom {}".format(params[0]))
             self.players.append(client)
             self.team_name.append(params[0])
 
