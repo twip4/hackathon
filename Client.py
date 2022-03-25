@@ -51,17 +51,21 @@ def recuData():
         return "turn",dataL[1]
     if dataL[0] == "EVENT" :
         if dataL[1] == '0' :
-            return "move",
+            return "move",(int(dataL[2]),int(dataL[3])),dataL[4],dataL[5],dataL[6]
         if dataL[1] == '1' :
+            return "stay",(int(dataL[2]),int(dataL[3])),dataL[4]
         if dataL[1] == '2' :
+            return "double",(int(dataL[2]),int(dataL[3]))
         if dataL[1] == '3' :
+            return "tp",(int(dataL[2]),int(dataL[3])),(int(dataL[4]),int(dataL[5]))
         if dataL[1] == '4' :
+            return "inacess",(int(dataL[2]),int(dataL[3])),dataL[4]
         if dataL[1] == '5' :
+            return "freeze",(int(dataL[2]),int(dataL[3]))
         if dataL[1] == '6' :
+            return "freezeAdv",(int(dataL[2]),int(dataL[3]))
         if dataL[1] == '7' :
-
-        
-        return "event",[dataL[1],dataL[2],dataL[3],dataL[4]]
+            return "divis",(int(dataL[2]),int(dataL[3]))
 
 
 send("JOIN|EQUIPE DE BG")
