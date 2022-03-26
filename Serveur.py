@@ -10,7 +10,7 @@ NBJOUEUR = 2
 NBCASES = 5
 BASE_UNITE_SIZE = 12
 MAX_TURN = 30
-EVENT_PROBA = 100 # Pourcentage
+EVENT_PROBA = 15  # Pourcentage
 WAIT_TIME = 1000 # Temps Ã  attendre entre chaque action d'un joueur (pour voir ce qu'il se passe)
 
 # AFFICHAGE
